@@ -13,6 +13,7 @@ expressWs(app);
 //引入路由模块管理文件
 var indexRouter = require("./routes/index");
 var editRouter = require("./routes/edit");
+
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
@@ -26,6 +27,23 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
 app.use("/editor", editRouter);
+
+//websocket server
+app.ws("/ws", function (ws, req) {
+  //监听打开
+  ws.on("open", function () {
+    console.log("连接已打开");
+    ws.send("hello client");
+  });
+  //监听消息
+  ws.on("message", function (msg) {
+    console.log("来自客户端的消息", msg);
+  });
+  //监听问题
+  ws.on("error", function (err) {
+    console.log("发生错误", err);
+  });
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
