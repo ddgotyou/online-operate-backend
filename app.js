@@ -7,8 +7,29 @@ const cors = require("cors");
 
 var app = express();
 //引入WebSocket模块
-var expressWs = require("express-ws"); // 为app添加ws实例方法
-expressWs(app);
+var websocket = require("ws"); // 为app添加ws实例方法
+var server = new websocket.Server({
+  port: 1234,
+});
+server.on("open", () => {
+  console.log("open");
+});
+server.on("close", () => {
+  console.log("close");
+});
+server.on("connection", (ws, req) => {
+  console.log("connection连接成功");
+  ws.on("message", (data) => {
+    // data: 接收信息
+    server.clients.forEach((item) => {
+      //对每个客户端传回消息
+      if (item.readyState === ws.OPEN) {
+        console.log("信息", data);
+        item.send("hello client" + data);
+      }
+    });
+  });
+});
 
 //引入路由模块管理文件
 var indexRouter = require("./routes/index");
@@ -27,23 +48,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
 app.use("/editor", editRouter);
-
-//websocket server
-app.ws("/ws", function (ws, req) {
-  //监听打开
-  ws.on("open", function () {
-    console.log("连接已打开");
-    ws.send("hello client");
-  });
-  //监听消息
-  ws.on("message", function (msg) {
-    console.log("来自客户端的消息", msg);
-  });
-  //监听问题
-  ws.on("error", function (err) {
-    console.log("发生错误", err);
-  });
-});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
