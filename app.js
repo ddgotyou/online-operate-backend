@@ -6,35 +6,19 @@ var logger = require("morgan");
 const cors = require("cors");
 
 var app = express();
-//引入WebSocket模块
-var websocket = require("ws"); // 为app添加ws实例方法
-var server = new websocket.Server({
-  port: 1234,
-});
-server.on("open", () => {
-  console.log("open");
-});
-server.on("close", () => {
-  console.log("close");
-});
-server.on("connection", (ws, req) => {
-  console.log("connection连接成功");
-  ws.on("message", (data) => {
-    // data: 接收信息
-    server.clients.forEach((item) => {
-      //对每个客户端传回消息
-      if (item.readyState === ws.OPEN) {
-        console.log("信息", data);
-        item.send("hello client" + data);
-      }
-    });
-  });
-});
+var http = require("http");
+// PS：端口冲突！！需要对http创建一个新端口的server
+var server = http.createServer(app);
+// 端口监听生效：1234
+server.listen(1234);
+var expressWs = require("express-ws");
+// 指定websocket使用端口1234上的服务器
+expressWs(app, server);
 
 //引入路由模块管理文件
 var indexRouter = require("./routes/index");
 var editRouter = require("./routes/edit");
-
+var wsRouter = require("./routes/wsService");
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
@@ -48,7 +32,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
 app.use("/editor", editRouter);
-
+app.use("/ws", wsRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
