@@ -24,11 +24,17 @@ async function fetchUser(params) {
   }
 }
 
-/* GET home page. */
-router.get("/getuser", async function (req, res, next) {
+/* 获取某个用户的信息. */
+router.get("/getUser", async function (req, res, next) {
   const params = req.query;
   const userInfo = await fetchUser(params);
   res.send(userInfo);
+});
+
+/* 获取所有用户的信息. */
+router.get("/getUserList", async function (req, res, next) {
+  const userList = await usersCollection.find().toArray();
+  res.send(userList);
 });
 
 module.exports = router;
