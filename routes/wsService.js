@@ -10,7 +10,6 @@ router.ws("/", function (ws, req) {
 const onlineUsers = [];
 var preLen = 0;
 router.ws("/online_user", function (ws, req) {
-  let firstVisit = true;
   //----定时推送在线用户
   setInterval(() => {
     if (prelen !== onlineUsers.length) {
@@ -28,11 +27,7 @@ router.ws("/online_user", function (ws, req) {
       //如果用户不存在
       if (onlineUsers.findIndex((item) => item._id === user._id) === -1) {
         onlineUsers.push(user);
-        if (firstVisit) {
-          ws.send(JSON.stringify(onlineUsers));
-          firstVisit = false;
-          console.log("first visit");
-        } else ws.send(JSON.stringify(user));
+        ws.send(JSON.stringify(onlineUsers));
       }
     }
   });
