@@ -9,15 +9,16 @@ let docManager = null;
 router.ws("/", async function (ws, req) {
   let isGetDocInfo = false;
   ws.on("message", function (msg) {
-   
-    //判断是否为第一位进入文档的用户
+     /* 监听用户文档操作消息 */
     if (!isGetDocInfo) {
+      //判断是否为第一次进入文档的用户
       const doc_info = JSON.parse(msg);
       isGetDocInfo = true;
-      //未创建
+  
       if (
         docList.findIndex((item) => item.getDocId() === doc_info._id) === -1
       ) {
+        //如果为第一位访问该文档的用户，未创建
         console.log("new创建文档");
         //创建doc manager，并存入文档管理器中
         docManager = new DocManager(doc_info);
@@ -26,10 +27,10 @@ router.ws("/", async function (ws, req) {
         //已经存在，直接获取
         docManager = docList.find((item) => item.getDocId() === doc_info._id);
       }
-
+      // 添加用户进入文档在线用户队列
       docManager.addOnlineOpUser(ws,curUser);
     } else {
-      //接受文档的操作日志
+      //接受用户文档的操作日志
       const new_log = JSON.parse(msg);
       docManager.applyOp(new_log);
     }
@@ -37,7 +38,7 @@ router.ws("/", async function (ws, req) {
 });
 
 router.ws("/online_user", function (ws, req) {
-  //---监听用户登陆状态消息
+  /* 监听用户登陆状态消息 */
   ws.on("message", function (msg) {
     //判断消息类型
     if (msg.indexOf("online_user") === -1) {
@@ -66,7 +67,7 @@ router.ws("/online_user", function (ws, req) {
       if(docManager)  ws.send(JSON.stringify(docManager.opUsers));
     }
   });
-  //-----监听用户链接关闭
+   /* 监听用户链接主动关闭 */
   ws.on("close", function (msg) {
     //删除此时的用户
     const user = JSON.parse(msg);

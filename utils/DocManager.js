@@ -21,14 +21,15 @@ class DocManager {
       this.content =
         this.content.slice(0, new_op.position) +
         new_op.diff_content +
-        this.content.slice(new_op.position);
+        this.content.slice(new_op.position+new_op.diff_length??0);
       console.log("插入后当前内容", this.content);
       this.saveContent();
       this.sendOpToOthers(new_op);
     } else if (new_op.type === "delete") {
+      const len = new_op.diff_length?new_op.diff_length:1
       this.content =
         this.content.slice(0, new_op.position) +
-        this.content.slice(new_op.position + 1);
+        this.content.slice(new_op.position + len);
       console.log("删除后当前内容", this.content);
       this.saveContent();
       this.sendOpToOthers(new_op);
