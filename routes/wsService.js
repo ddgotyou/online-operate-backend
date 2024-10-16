@@ -9,10 +9,10 @@ let docManager = null;
 router.ws("/", async function (ws, req) {
   let isGetDocInfo = false;
   ws.on("message", function (msg) {
+   
+    //判断是否为第一位进入文档的用户
     if (!isGetDocInfo) {
       const doc_info = JSON.parse(msg);
-      // console.log("此时的文档信息", doc_info);
-      ws.send("i got it");
       isGetDocInfo = true;
       //未创建
       if (
@@ -20,18 +20,17 @@ router.ws("/", async function (ws, req) {
       ) {
         console.log("new创建文档");
         //创建doc manager，并存入文档管理器中
-        docManager = new DocManager(ws, doc_info);
+        docManager = new DocManager(doc_info);
         docList.push(docManager);
       } else {
         //已经存在，直接获取
         docManager = docList.find((item) => item.getDocId() === doc_info._id);
       }
 
-      docManager.addOnlineOpUser(curUser);
+      docManager.addOnlineOpUser(ws,curUser);
     } else {
       //接受文档的操作日志
       const new_log = JSON.parse(msg);
-      // console.log("接受到的日志", new_log);
       docManager.applyOp(new_log);
     }
   });
@@ -42,6 +41,7 @@ router.ws("/online_user", function (ws, req) {
   ws.on("message", function (msg) {
     //判断消息类型
     if (msg.indexOf("online_user") === -1) {
+      //---新用户加入
       const user = JSON.parse(msg);
       if (user) {
         const onlineUsers =
@@ -53,18 +53,17 @@ router.ws("/online_user", function (ws, req) {
         if (onlineUsers.findIndex((item) => item._id === user._id) === -1) {
           curUser = user;
           onlineUsers.push(user);
-          docManager && docManager.addOnlineOpUser(user);
+          //---10.15删除了此处的添加用户
           //新的用户list
           console.log("新的用户list", onlineUsers);
           ws.send(JSON.stringify(onlineUsers));
         }
       }
     } else {
+      //---用户请求拉取新的在线用户列表
       const doc_id = msg.split(":")[1];
       const docManager = docList.find((item) => item.getDocId() === doc_id);
-      console.log("此时用户位于的doc用户列表", msg, doc_id);
-      console.log(docManager.opUsers);
-      ws.send(JSON.stringify(docManager.opUsers));
+      if(docManager)  ws.send(JSON.stringify(docManager.opUsers));
     }
   });
   //-----监听用户链接关闭

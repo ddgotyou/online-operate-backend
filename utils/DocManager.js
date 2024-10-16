@@ -1,12 +1,11 @@
 const { docsCollection, logCollection } = require("../mongodb/open");
 const { ObjectId } = require("mongodb");
 class DocManager {
-  constructor(ws, docInfo) {
+  constructor(docInfo) {
     this.docInfo = docInfo;
     this.content = this.docInfo.content ?? "";
     this.opStack = [];
     this.opUsers = [];
-    this.ws = ws;
   }
   getDocId() {
     return this.docInfo._id;
@@ -35,9 +34,10 @@ class DocManager {
       this.sendOpToOthers(new_op);
     }
   }
-  addOnlineOpUser(opUser) {
+  addOnlineOpUser(ws,opUser) {
     if (this.opUsers.findIndex((item) => item._id === opUser._id) === -1) {
-      this.opUsers.push(opUser);
+      const user={...opUser,ws}
+      this.opUsers.push(user);
       console.log(`当前在线用户 doc:${this.docInfo}`, this.opUsers);
     }
   }
@@ -51,8 +51,9 @@ class DocManager {
     //发送给其他用户
     this.opUsers.forEach((user) => {
       if (op.op_user !== user._id) {
+      console.log('发送给用户',op.op_user,user._id)
         //非本人用户
-        this.ws.send(JSON.stringify(op));
+        user.ws.send(JSON.stringify(op));
       }
     });
   }
