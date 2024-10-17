@@ -1,5 +1,6 @@
 const { docsCollection, logCollection } = require("../mongodb/open");
 const { ObjectId } = require("mongodb");
+var util=require("../utils/commonFunc")
 class DocManager {
   constructor(docInfo) {
     this.docInfo = docInfo;
@@ -54,7 +55,7 @@ class DocManager {
       if (op.op_user !== user._id) {
       console.log('发送给用户',op.op_user,user._id)
         //非本人用户
-        user.ws.send(JSON.stringify(op));
+        user.ws.send(util.msgWrap("opAlert",op,"ok"));
       }
     });
   }
