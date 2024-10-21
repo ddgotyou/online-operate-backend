@@ -8,6 +8,33 @@ const docList = [];
 let curUser = null;
 let docManager = null;
 
+const checkUserOnline = (testUser,doc_id)=>{
+    const _docManager = docList.find((item) => item.getDocId() === doc_id);
+    if(_docManager){
+      //---心跳检测
+      for (let i=0;i<(_docManager.opUsers.length);i++){
+          const changedUser = _docManager.opUsers[i]
+          const curTime = Date.now()
+          // 超过10s没收到ping，则认为不活跃
+          if(curTime- changedUser.lastActiveTime>= 5000){
+            changedUser.isActive=false
+          }
+          else{
+            changedUser.isActive=true
+          }
+          //更新发出本次ping包的用户的时间
+          if(changedUser._id===testUser._id){
+            //-----NOTE:简化处理,只要检测到再次发出ping，则认为用户在线
+            changedUser.isActive=true
+            changedUser.lastActiveTime=curTime
+          }
+      }
+      //---NOTE:简化处理，不活跃，先删除
+      const activeUsers  = _docManager.opUsers.filter((item)=>item.isActive===true)
+      _docManager.opUsers=activeUsers
+    }
+}
+
 router.ws("/", async function (ws, req) {
   ws.on("message", function (msg) {
     /** 统一解析消息 */
@@ -15,7 +42,7 @@ router.ws("/", async function (ws, req) {
       const { type }=curMsg
       switch(type){
         /* 获取文档信息 */
-        case "docInfo":
+        case "docInfo":{
           const doc_info = curMsg.data;
           if (
             docList.findIndex((item) => item.getDocId() === doc_info._id) === -1
@@ -32,12 +59,15 @@ router.ws("/", async function (ws, req) {
           // 添加用户进入文档在线用户队列
           docManager.addOnlineOpUser(ws,curUser);
           break
+        }
         /* 操作日志 */
-        case "oplog":
+        case "oplog":{
           //接受用户文档的操作日志
           const new_log = curMsg.data;
-          docManager.applyOp(new_log);
+          const _docManager = docList.find((item) => item.getDocId() === new_log.doc_id);
+          _docManager.applyOp(new_log);
           break
+        }
         default:
           break
       }
@@ -51,7 +81,7 @@ router.ws("/online_user", function (ws, req) {
     const { type }=curMsg
     //判断消息类型
     switch(type){
-      case 'addUser':
+      case 'addUser':{
          const user = curMsg.data;
         if (user) {
           const onlineUsers =
@@ -61,21 +91,42 @@ router.ws("/online_user", function (ws, req) {
           console.log("新加入的用户!", user);
           //如果用户不存在
           if (onlineUsers.findIndex((item) => item._id === user._id) === -1) {
-            curUser = user;
-            onlineUsers.push(user);
+            curUser = {...user,isActive:true,lastActiveTime:Date.now()};
+            onlineUsers.push(curUser);
             //---10.15删除了此处的添加用户
             //新的用户list
-            console.log("新的用户list", onlineUsers);
             ws.send(util.msgWrap("onlineUser",onlineUsers,"ok"));
           }
         }
         break
-      case 'fetchOnlineUser':
+      }
+      case 'fetchOnlineUser':{
         //---用户请求拉取新的在线用户列表
         const doc_id = curMsg.data;
         const _docManager = docList.find((item) => item.getDocId() === doc_id);
-        if(_docManager)  ws.send(util.msgWrap("onlineUser",_docManager.opUsers,"ok"));
+        if(_docManager)  
+          ws.send(util.msgWrap("onlineUser",_docManager.opUsers,"ok"));
         break
+      }
+      case 'ping':{
+        const otherFlag=curMsg.data
+        //获取当前用户
+        const { testUser,doc_id }= otherFlag
+        //----NOTE:后续可添加超过上一次发出的某个时间未发出ping，视作不活跃用户
+        checkUserOnline(testUser,doc_id)
+        // 后台返回状态
+        ws.send(util.msgWrap("pong","ok","ok"))
+      }
+      case "close":{
+        // console.log('用户主动关闭连接')
+        //用户主动关闭
+        const {user,doc} = curMsg.data;
+        const _docManager = docList.find((item) => item.getDocId() === doc);
+        if(_docManager){
+          //删除用户
+          _docManager.removeOnlineOpUser(user);
+        }
+      }
       default:
         break
     }
