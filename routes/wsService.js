@@ -138,6 +138,11 @@ router.ws("/online_user", function (ws, req) {
         if(_docManager){
           //删除用户
           _docManager.removeOnlineOpUser(user);
+          const targetMsg=util.msgWrap("focusUser",_docManager.focusStates,"ok")
+          // 通知所有用户
+          _docManager.opUsers.forEach((user) => {
+            user.ws.send(targetMsg);
+          });
         }
       }
       default:

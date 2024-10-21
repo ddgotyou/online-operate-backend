@@ -72,7 +72,14 @@ class DocManager {
     const user_index = this.opUsers.findIndex(
       (item) => item._id === opUser._id
     );
-    if (user_index !== -1) this.opUsers.splice(user_index, 1);
+    if (user_index !== -1) {
+      this.opUsers.splice(user_index, 1);
+      //同步删除聚焦状态
+      const userState = this.focusStates.findIndex((item) => item.focus_user._id === opUser._id)
+      if(userState!==-1){
+        this.focusStates.splice(userState,1)
+      }
+    }
   }
   sendOpToOthers(op) {
     //发送给其他用户
