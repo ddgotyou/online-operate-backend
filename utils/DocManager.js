@@ -7,9 +7,34 @@ class DocManager {
     this.content = this.docInfo.content ?? "";
     this.opStack = [];
     this.opUsers = [];
+    this.focusStates=[]
   }
   getDocId() {
     return this.docInfo._id;
+  }
+  updateFocusUserArr(userState){
+    if(userState.focus_user){
+      const curState =  this.focusStates.findIndex((item) => item.focus_user._id === userState.focus_user._id)
+      //已存在
+      if(curState!==-1){
+        //更新
+        if(userState.focus_pos && userState.focus_pos.length>0){
+          this.focusStates[curState].focus_pos = userState.focus_pos
+        }
+        else{
+          //删除
+          this.focusStates.splice(curState,1)
+        }
+      }
+      else{
+          if(userState.focus_pos && userState.focus_pos.length>0){
+            //有效位置
+            this.focusStates.push(userState)
+          }
+      }
+      console.log('当前focusStates',this.focusStates)
+    }
+    return this.focusStates
   }
   applyOp(op) {
     this.opStack.push(op);

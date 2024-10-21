@@ -68,6 +68,19 @@ router.ws("/", async function (ws, req) {
           _docManager.applyOp(new_log);
           break
         }
+        /* 用户焦点状态列表 */
+        case "updateFocusState":{
+          // 获取此时的用户焦点state
+          const {doc,focusState} = curMsg.data;
+          const _docManager = docList.find((item) => item.getDocId() === doc);
+          const newState= _docManager.updateFocusUserArr(focusState);
+          const targetMsg=util.msgWrap("focusUser",newState,"ok")
+          // 通知所有用户
+          _docManager.opUsers.forEach((user) => {
+            user.ws.send(targetMsg);
+          });
+          break
+         }
         default:
           break
       }
