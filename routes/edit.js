@@ -31,11 +31,12 @@ router.post("/update_doc_content", function (req, res, next) {
     //根据文档id 获取文档信息
     docsCollection
       .updateOne({ _id: doc_objectid }, { $set: { content: content } })
-      .then((res) => {
-        console.log("更新成功", res);
+      .then((ret) => {
+        res.status(200).send("更新成功");
       })
       .catch((err) => {
-        console.log("更新失败", err);
+        console.log(err)
+        res.status(500).send("更新失败");
       });
   }
 });

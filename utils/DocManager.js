@@ -4,6 +4,8 @@ var util=require("../utils/commonFunc")
 class DocManager {
   constructor(docInfo) {
     this.docInfo = docInfo;
+    // 文档类型
+    this.docType = docInfo.doc_type;
     this.content = this.docInfo.content ?? "";
     this.opStack = [];
     this.opUsers = [];
@@ -41,25 +43,26 @@ class DocManager {
     //按照时间顺序，执行操作
     this.opStack.sort((a, b) => a.update_time - b.update_time);
     const new_op = this.opStack[this.opStack.length - 1];
-    console.log("当前操作", new_op);
-    //应用到新的内容中去
-    if (new_op.type === "insert") {
-      this.content =
-        this.content.slice(0, new_op.position) +
-        new_op.diff_content +
-        this.content.slice(new_op.position+new_op.diff_length??0);
-      console.log("插入后当前内容", this.content);
-      this.saveContent();
-      this.sendOpToOthers(new_op);
-    } else if (new_op.type === "delete") {
-      const len = new_op.diff_length?new_op.diff_length:1
-      this.content =
-        this.content.slice(0, new_op.position) +
-        this.content.slice(new_op.position + len);
-      console.log("删除后当前内容", this.content);
-      this.saveContent();
-      this.sendOpToOthers(new_op);
-    }
+    // console.log("当前操作", new_op);
+    // //应用到新的内容中去
+    // if (new_op.type === "insert") {
+    //   this.content =
+    //     this.content.slice(0, new_op.position) +
+    //     new_op.diff_content +
+    //     this.content.slice(new_op.position+new_op.diff_length??0);
+    //   console.log("插入后当前内容", this.content);
+    //   // this.saveContent();
+    //   this.sendOpToOthers(new_op);
+    // } else if (new_op.type === "delete") {
+    //   const len = new_op.diff_length?new_op.diff_length:1
+    //   this.content =
+    //     this.content.slice(0, new_op.position) +
+    //     this.content.slice(new_op.position + len);
+    //   console.log("删除后当前内容", this.content);
+    //   // this.saveContent();
+    //   this.sendOpToOthers(new_op);
+    // }
+    this.sendOpToOthers(new_op);
   }
   addOnlineOpUser(ws,opUser) {
     if (this.opUsers.findIndex((item) => item._id === opUser._id) === -1) {
@@ -91,7 +94,10 @@ class DocManager {
       }
     });
   }
-  saveContent() {
+  saveContent(content) {
+    // 有新传入的值
+    if(content) this.content = content;
+    // 内容没有改变
     if (this.content === this.docInfo.content) return;
     const { _id } = this.docInfo;
     const doc_objectid = new ObjectId(_id);
